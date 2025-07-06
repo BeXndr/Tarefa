@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tarefas</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- jsPDF para exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- Sistema de Autenticação -->
+    <script src="auth.js"></script>
+    <style>
+        .card-dashboard {
+            transition: transform 0.2s;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card-dashboard:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        .btn-action {
+            margin: 0 2px;
+        }
+        .filter-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6c757d;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/tarefas">
+                <i class="fas fa-tasks me-2"></i>Sistema de Tarefas
+            </a>
+            <button class="btn btn-light" onclick="window.location.href='/tarefas/nova'">
+                <i class="fas fa-plus me-1"></i>Nova Tarefa
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Mensagens -->
+        <div id="alerts"></div>
+
+        <!-- Dashboard Cards -->
+        <div class="row mb-4" id="dashboard">
+            <div class="col-md-3">
+                <div class="card card-dashboard text-primary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-list-ul fa-2x mb-2"></i>
+                        <h5 class="card-title" id="totalTarefas">0</h5>
+                        <p class="card-text">Total de Tarefas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-dashboard text-warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <h5 class="card-title" id="pendentes">0</h5>
+                        <p class="card-text">Pendentes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-dashboard text-info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-play-circle fa-2x mb-2"></i>
+                        <h5 class="card-title" id="emAndamento">0</h5>
+                        <p class="card-text">Em Andamento</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-dashboard text-success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h5 class="card-title" id="concluidas">0</h5>
+                        <p class="card-text">Concluídas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtro por Data -->
+        <div class="filter-section">
+            <h6><i class="fas fa-filter me-2"></i>Filtrar por Período</h6>
+            <form id="filtroForm" class="row g-3">
+                <div class="col-md-4">
+                    <label for="dataMin" class="form-label">Data Inicial</label>
+                    <input type="date" class="form-control" id="dataMin" name="dataMin">
+                </div>
+                <div class="col-md-4">
+                    <label for="dataMax" class="form-label">Data Final</label>
+                    <input type="date" class="form-control" id="dataMax" name="dataMax">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-search me-1"></i>Buscar
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="limparFiltro()">
+                        <i class="fas fa-times me-1"></i>Limpar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-2">Carregando tarefas...</p>
+        </div>
+
+        <!-- Tabela de Tarefas -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Lista de Tarefas
+                    <span id="filtroAtivo" class="badge bg-info ms-2" style="display: none;">Filtrado</span>
+                </h5>
+                <a href="formulario.html" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Nova Tarefa
+                </a>
+                <button class="btn btn-success btn-sm ms-2" onclick="exportarPDF()" title="Exportar Lista em PDF">
+                    <i class="fas fa-file-pdf me-1"></i>PDF
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Tabela -->
+                <div id="tabelaContainer" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Descrição</th>
+                                    <th>Data Criação</th>
+                                    <th>Data Prevista</th>
+                                    <th>Data Encerramento</th>
+                                    <th>Situação</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaTarefas">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Estado Vazio -->
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <i class="fas fa-inbox text-muted"></i>
+                    <h5 class="text-muted">Nenhuma tarefa encontrada</h5>
+                    <p class="text-muted">
+                        <a href="formulario.html" class="text-decoration-none">Clique aqui para criar sua primeira tarefa</a>
+                    </p>
+                </div>
+
+                <!-- Estado de Erro -->
+                <div id="errorState" class="empty-state" style="display: none;">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <h5 class="text-danger">Erro ao carregar tarefas</h5>
+                    <p class="text-muted">Verifique se o servidor está rodando.</p>
+                    <button class="btn btn-outline-primary" onclick="carregarTarefas()">
+                        <i class="fas fa-sync-alt me-1"></i>Tentar novamente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 Sistema de Tarefas - Desenvolvido com Spring Boot</p>
+        </div>
+    </footer>
+
+    <!-- Modal de Confirmação para Exclusão -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir esta tarefa?</p>
+                    <p class="text-muted" id="tarefaParaExcluir"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarExclusao()">
+                        <i class="fas fa-trash me-1"></i>Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let tarefas = [];
+        let tarefaParaExcluirId = null;
+        
+        // ✅ CORREÇÃO - URL dinâmica que funciona em qualquer porta
+        const API_BASE = `${window.location.protocol}//${window.location.host}/api`;
+
+        // Carregar tarefas quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarTarefas();
+            
+            // Event listener para o formulário de filtro
+            document.getElementById('filtroForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                filtrarTarefas();
+            });
+        });
+
+        // Função para mostrar alertas
+        function mostrarAlerta(tipo, mensagem) {
+            const alertsContainer = document.getElementById('alerts');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                ${mensagem}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertsContainer.appendChild(alertDiv);
+            
+            // Auto-hide após 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Função para carregar tarefas
+        async function carregarTarefas() {
+            mostrarLoading(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/tarefas`);
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar tarefas');
+                }
+                
+                tarefas = await response.json();
+                renderizarTarefas(tarefas);
+                atualizarDashboard(tarefas);
+                mostrarLoading(false);
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarEstado('error');
+                mostrarLoading(false);
+            }
+        }
+
+        // Função para filtrar tarefas
+        async function filtrarTarefas() {
+            const dataMin = document.getElementById('dataMin').value;
+            const dataMax = document.getElementById('dataMax').value;
+            
+            if (!dataMin || !dataMax) {
+                mostrarAlerta('warning', 'Por favor, selecione ambas as datas para filtrar.');
+                return;
+            }
+            
+            mostrarLoading(true);
+            
+            try {
+                const url = `${API_BASE}/tarefas/buscar?dataMin=${dataMin}&dataMax=${dataMax}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Erro ao filtrar tarefas');
+                }
+                
+                const tarefasFiltradas = await response.json();
+                renderizarTarefas(tarefasFiltradas);
+                atualizarDashboard(tarefasFiltradas);
+                document.getElementById('filtroAtivo').style.display = 'inline';
+                mostrarLoading(false);
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarAlerta('danger', 'Erro ao filtrar tarefas: ' + error.message);
+                mostrarLoading(false);
+            }
+        }
+
+        // Função para limpar filtro
+        function limparFiltro() {
+            document.getElementById('dataMin').value = '';
+            document.getElementById('dataMax').value = '';
+            document.getElementById('filtroAtivo').style.display = 'none';
+            carregarTarefas();
+        }
+
+        // Função para renderizar tarefas na tabela
+        function renderizarTarefas(listaTarefas) {
+            const tbody = document.getElementById('tabelaTarefas');
+            const tabelaContainer = document.getElementById('tabelaContainer');
+            const emptyState = document.getElementById('emptyState');
+            
+            tbody.innerHTML = '';
+            
+            if (listaTarefas.length === 0) {
+                mostrarEstado('empty');
+                return;
+            }
+            
+            listaTarefas.forEach(tarefa => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${tarefa.id}</td>
+                    <td><strong>${tarefa.descricao}</strong></td>
+                    <td>${tarefa.data_criacao || '-'}</td>
+                    <td>${tarefa.data_prevista || '-'}</td>
+                    <td>${tarefa.data_encerramento || '-'}</td>
+                    <td>
+                        <span class="badge status-badge ${getBadgeClass(tarefa.situacao)}">
+                            ${tarefa.situacao}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-primary btn-sm btn-action" 
+                                    onclick="editarTarefa(${tarefa.id})" 
+                                    title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm btn-action" 
+                                    onclick="prepararExclusao(${tarefa.id}, '${tarefa.descricao}')" 
+                                    title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            mostrarEstado('tabela');
+        }
+
+        // Função para obter classe CSS do badge baseado na situação
+        function getBadgeClass(situacao) {
+            switch (situacao) {
+                case 'Pendente': return 'bg-warning';
+                case 'Em Andamento': return 'bg-info';
+                case 'Concluída': return 'bg-success';
+                case 'Cancelada': return 'bg-secondary';
+                default: return 'bg-secondary';
+            }
+        }
+
+        // Função para atualizar dashboard
+        function atualizarDashboard(listaTarefas) {
+            const total = listaTarefas.length;
+            const pendentes = listaTarefas.filter(t => t.situacao === 'Pendente').length;
+            const emAndamento = listaTarefas.filter(t => t.situacao === 'Em Andamento').length;
+            const concluidas = listaTarefas.filter(t => t.situacao === 'Concluída').length;
+            
+            document.getElementById('totalTarefas').textContent = total;
+            document.getElementById('pendentes').textContent = pendentes;
+            document.getElementById('emAndamento').textContent = emAndamento;
+            document.getElementById('concluidas').textContent = concluidas;
+        }
+
+        // Função para mostrar/esconder loading
+        function mostrarLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // Função para mostrar diferentes estados da tabela
+        function mostrarEstado(estado) {
+            const tabela = document.getElementById('tabelaContainer');
+            const empty = document.getElementById('emptyState');
+            const error = document.getElementById('errorState');
+            
+            // Esconder todos
+            tabela.style.display = 'none';
+            empty.style.display = 'none';
+            error.style.display = 'none';
+            
+            // Mostrar o correto
+            switch (estado) {
+                case 'tabela':
+                    tabela.style.display = 'block';
+                    break;
+                case 'empty':
+                    empty.style.display = 'block';
+                    break;
+                case 'error':
+                    error.style.display = 'block';
+                    break;
+            }
+        }
+
+        // Função para editar tarefa
+        function editarTarefa(id) {
+            window.location.href = `formulario.html?id=${id}`;
+        }
+
+        // Função para preparar exclusão
+        function prepararExclusao(id, descricao) {
+            tarefaParaExcluirId = id;
+            document.getElementById('tarefaParaExcluir').textContent = `"${descricao}"`;
+            new bootstrap.Modal(document.getElementById('confirmModal')).show();
+        }
+
+        // Função para confirmar exclusão
+        async function confirmarExclusao() {
+            if (!tarefaParaExcluirId) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/tarefas/${tarefaParaExcluirId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao excluir tarefa');
+                }
+                
+                const result = await response.json();
+                
+                // Fechar modal
+                bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                
+                // Mostrar sucesso e recarregar
+                mostrarAlerta('success', 'Tarefa excluída com sucesso!');
+                carregarTarefas();
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarAlerta('danger', 'Erro ao excluir tarefa: ' + error.message);
+            }
+            
+            tarefaParaExcluirId = null;
+        }
+
+        // Função para exportar PDF
+        function exportarPDF() {
+            try {
+                // Verificar se há tarefas para exportar
+                if (!tarefas || tarefas.length === 0) {
+                    mostrarAlerta('warning', 'Não há tarefas para exportar!');
+                    return;
+                }
+
+                // Criar nova instância do jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Configurar fonte para suporte a caracteres especiais
+                doc.setFont('helvetica');
+
+                // Título do documento
+                doc.setFontSize(20);
+                doc.setTextColor(40, 44, 52);
+                doc.text('RELATÓRIO DE TAREFAS', 105, 25, { align: 'center' });
+
+                // Linha decorativa
+                doc.setDrawColor(0, 123, 255);
+                doc.setLineWidth(0.5);
+                doc.line(20, 30, 190, 30);
+
+                // Informações do relatório
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                const agora = new Date();
+                const dataFormatada = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR');
+                doc.text(`Gerado em: ${dataFormatada}`, 20, 40);
+                doc.text(`Total de tarefas: ${tarefas.length}`, 20, 45);
+
+                // Estatísticas
+                const estatisticas = calcularEstatisticas(tarefas);
+                doc.text(`Pendentes: ${estatisticas.pendentes} | Em Andamento: ${estatisticas.emAndamento} | Concluídas: ${estatisticas.concluidas} | Canceladas: ${estatisticas.canceladas}`, 20, 50);
+
+                // Preparar dados para a tabela
+                const colunas = [
+                    { header: 'ID', dataKey: 'id' },
+                    { header: 'Descrição', dataKey: 'descricao' },
+                    { header: 'Data Criação', dataKey: 'data_criacao' },
+                    { header: 'Data Prevista', dataKey: 'data_prevista' },
+                    { header: 'Data Encerramento', dataKey: 'data_encerramento' },
+                    { header: 'Situação', dataKey: 'situacao' }
+                ];
+
+                const dadosTabela = tarefas.map(tarefa => ({
+                    id: tarefa.id,
+                    descricao: tarefa.descricao ? (tarefa.descricao.length > 50 ? tarefa.descricao.substring(0, 47) + '...' : tarefa.descricao) : '-',
+                    data_criacao: tarefa.data_criacao || '-',
+                    data_prevista: tarefa.data_prevista || '-',
+                    data_encerramento: tarefa.data_encerramento || '-',
+                    situacao: tarefa.situacao || '-'
+                }));
+
+                // Criar tabela com autoTable
+                doc.autoTable({
+                    columns: colunas,
+                    body: dadosTabela,
+                    startY: 60,
+                    styles: {
+                        fontSize: 8,
+                        cellPadding: 3,
+                        overflow: 'linebreak',
+                        halign: 'left'
+                    },
+                    headStyles: {
+                        fillColor: [0, 123, 255],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                        halign: 'center'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    },
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 15 }, // ID
+                        1: { cellWidth: 60 }, // Descrição
+                        2: { halign: 'center', cellWidth: 25 }, // Data Criação
+                        3: { halign: 'center', cellWidth: 25 }, // Data Prevista
+                        4: { halign: 'center', cellWidth: 25 }, // Data Encerramento
+                        5: { halign: 'center', cellWidth: 30 } // Situação
+                    },
+                    didParseCell: function(data) {
+                        // Colorir células de situação
+                        if (data.column.dataKey === 'situacao') {
+                            const situacao = data.cell.raw;
+                            switch (situacao) {
+                                case 'Pendente':
+                                    data.cell.styles.textColor = [255, 140, 0]; // Laranja
+                                    break;
+                                case 'Em Andamento':
+                                    data.cell.styles.textColor = [0, 123, 255]; // Azul
+                                    break;
+                                case 'Concluída':
+                                    data.cell.styles.textColor = [40, 167, 69]; // Verde
+                                    break;
+                                case 'Cancelada':
+                                    data.cell.styles.textColor = [108, 117, 125]; // Cinza
+                                    break;
+                            }
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                });
+
+                // Rodapé
+                const finalY = doc.lastAutoTable.finalY;
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                doc.text('Sistema de Gerenciamento de Tarefas - Relatório gerado automaticamente', 105, finalY + 20, { align: 'center' });
+
+                // Nome do arquivo
+                const nomeArquivo = `tarefas_${agora.toISOString().split('T')[0]}_${agora.getHours()}${agora.getMinutes()}.pdf`;
+
+                // Salvar o PDF
+                doc.save(nomeArquivo);
+
+                // Mostrar mensagem de sucesso
+                mostrarAlerta('success', `PDF exportado com sucesso! Arquivo: ${nomeArquivo}`);
+
+            } catch (error) {
+                console.error('Erro ao exportar PDF:', error);
+                mostrarAlerta('danger', 'Erro ao exportar PDF: ' + error.message);
+            }
+        }
+
+        // Função auxiliar para calcular estatísticas
+        function calcularEstatisticas(listaTarefas) {
+            return {
+                pendentes: listaTarefas.filter(t => t.situacao === 'Pendente').length,
+                emAndamento: listaTarefas.filter(t => t.situacao === 'Em Andamento').length,
+                concluidas: listaTarefas.filter(t => t.situacao === 'Concluída').length,
+                canceladas: listaTarefas.filter(t => t.situacao === 'Cancelada').length
+            };
+        }
+
+        // Verificar mensagens da URL (quando voltar do formulário)
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sucesso = urlParams.get('sucesso');
+            const erro = urlParams.get('erro');
+            
+            if (sucesso) {
+                mostrarAlerta('success', decodeURIComponent(sucesso));
+                // Limpar URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            if (erro) {
+                mostrarAlerta('danger', decodeURIComponent(erro));
+                // Limpar URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Tarefas</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 3rem 2rem;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header .logo {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .login-header h1 {
+            color: #333;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .form-floating {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-floating > .form-control {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .form-floating > .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+        }
+        
+        .form-floating > label {
+            color: #666;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .default-credentials {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .default-credentials h6 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .default-credentials p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .floating-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .shape:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .shape:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 70%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .shape:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            top: 40%;
+            left: 80%;
+            animation-delay: 4s;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .login-container {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Formas flutuantes decorativas -->
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <h1>Sistema de Tarefas</h1>
+            <p>Faça login para acessar o sistema</p>
+        </div>
+
+        <!-- Credenciais padrão -->
+        <div class="default-credentials">
+            <h6><i class="fas fa-info-circle me-1"></i>Credenciais Padrão</h6>
+            <p><strong>Usuário:</strong> admin</p>
+            <p><strong>Senha:</strong> admin</p>
+        </div>
+
+        <!-- Mensagens -->
+        <div id="alertContainer"></div>
+
+        <!-- Formulário de Login -->
+        <form id="loginForm">
+            <div class="form-floating">
+                <input type="text" 
+                       class="form-control" 
+                       id="usuario" 
+                       placeholder="Digite seu usuário"
+                       required
+                       value="admin">
+                <label for="usuario">
+                    <i class="fas fa-user me-2"></i>Usuário
+                </label>
+            </div>
+
+            <div class="form-floating">
+                <input type="password" 
+                       class="form-control" 
+                       id="senha" 
+                       placeholder="Digite sua senha"
+                       required
+                       value="admin">
+                <label for="senha">
+                    <i class="fas fa-lock me-2"></i>Senha
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">
+                <span id="btnText">
+                    <i class="fas fa-sign-in-alt me-2"></i>Entrar
+                </span>
+                <span id="loadingSpinner" class="loading-spinner">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Entrando...
+                </span>
+            </button>
+        </form>
+
+        <div class="text-center">
+            <small class="text-muted">
+                <i class="fas fa-shield-alt me-1"></i>
+                Acesso seguro ao sistema
+            </small>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Credenciais padrão
+        const USUARIO_PADRAO = 'admin';
+        const SENHA_PADRAO = 'admin';
+        const TEMPO_SESSAO = 8 * 60 * 60 * 1000; // 8 horas em milissegundos
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar se já está logado
+            if (verificarSessao()) {
+                redirecionarParaSistema();
+                return;
+            }
+
+            // Event listener para o formulário
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                fazerLogin();
+            });
+
+            // Auto-foco no campo usuário se estiver vazio
+            const campoUsuario = document.getElementById('usuario');
+            if (!campoUsuario.value) {
+                campoUsuario.focus();
+            } else {
+                document.getElementById('senha').focus();
+            }
+
+            // Enter para fazer login
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    fazerLogin();
+                }
+            });
+        });
+
+        // Função para mostrar alertas
+        function mostrarAlerta(tipo, mensagem, icone = null) {
+            const container = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            
+            const iconClass = icone || (tipo === 'success' ? 'check-circle' : 'exclamation-circle');
+            
+            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${iconClass} me-2"></i>
+                ${mensagem}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Limpar alertas anteriores
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+            
+            // Auto-hide após 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Função para fazer login
+        function fazerLogin() {
+            const usuario = document.getElementById('usuario').value.trim();
+            const senha = document.getElementById('senha').value;
+            const btnText = document.getElementById('btnText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Validações básicas
+            if (!usuario) {
+                mostrarAlerta('warning', 'Por favor, digite o usuário.');
+                document.getElementById('usuario').focus();
+                return;
+            }
+
+            if (!senha) {
+                mostrarAlerta('warning', 'Por favor, digite a senha.');
+                document.getElementById('senha').focus();
+                return;
+            }
+
+            // Mostrar loading
+            btnText.style.display = 'none';
+            loadingSpinner.style.display = 'inline';
+
+            // Simular delay de autenticação (mais realista)
+            setTimeout(() => {
+                // Verificar credenciais
+                if (usuario === USUARIO_PADRAO && senha === SENHA_PADRAO) {
+                    // Login bem-sucedido
+                    criarSessao();
+                    mostrarAlerta('success', 'Login realizado com sucesso! Redirecionando...', 'check-circle');
+                    
+                    // Redirecionar após um pequeno delay
+                    setTimeout(() => {
+                        redirecionarParaSistema();
+                    }, 1500);
+                } else {
+                    // Login falhou
+                    mostrarAlerta('danger', 'Usuário ou senha incorretos. Tente novamente.', 'times-circle');
+                    document.getElementById('senha').value = '';
+                    document.getElementById('senha').focus();
+                    
+                    // Restaurar botão
+                    btnText.style.display = 'inline';
+                    loadingSpinner.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        // Função para criar sessão
+        function criarSessao() {
+            const agora = new Date().getTime();
+            const sessao = {
+                usuario: USUARIO_PADRAO,
+                loginTime: agora,
+                expirationTime: agora + TEMPO_SESSAO
+            };
+            
+            localStorage.setItem('sessaoTarefas', JSON.stringify(sessao));
+        }
+
+        // Função para verificar se há sessão válida
+        function verificarSessao() {
+            try {
+                const sessaoStr = localStorage.getItem('sessaoTarefas');
+                if (!sessaoStr) return false;
+                
+                const sessao = JSON.parse(sessaoStr);
+                const agora = new Date().getTime();
+                
+                // Verificar se a sessão ainda é válida
+                if (agora < sessao.expirationTime) {
+                    return true;
+                } else {
+                    // Sessão expirou
+                    localStorage.removeItem('sessaoTarefas');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Erro ao verificar sessão:', error);
+                localStorage.removeItem('sessaoTarefas');
+                return false;
+            }
+        }
+
+        // Função para redirecionar para o sistema
+        function redirecionarParaSistema() {
+            window.location.href = 'lista.html';
+        }
+
+        // Efeito de digitação no placeholder (opcional)
+        function efetivoDigitacao() {
+            const textos = ['admin', 'administrador', 'admin'];
+            let textoAtual = 0;
+            let charAtual = 0;
+            let deletando = false;
+            
+            const elemento = document.getElementById('usuario');
+            
+            function digitar() {
+                const textoCompleto = textos[textoAtual];
+                
+                if (deletando) {
+                    elemento.placeholder = textoCompleto.substring(0, charAtual - 1);
+                    charAtual--;
+                } else {
+                    elemento.placeholder = textoCompleto.substring(0, charAtual + 1);
+                    charAtual++;
+                }
+                
+                if (!deletando && charAtual === textoCompleto.length) {
+                    deletando = true;
+                    setTimeout(digitar, 1500);
+                } else if (deletando && charAtual === 0) {
+                    deletando = false;
+                    textoAtual = (textoAtual + 1) % textos.length;
+                    setTimeout(digitar, 500);
+                } else {
+                    setTimeout(digitar, deletando ? 50 : 100);
+                }
+            }
+            
+            // Descomentear para ativar o efeito de digitação
+            // digitar();
+        }
+    </script>
+</body>
+</html>

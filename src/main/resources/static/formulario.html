@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Tarefa</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .form-header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 10px 10px 0 0;
+            padding: 2rem;
+            text-align: center;
+        }
+        .form-body {
+            padding: 2rem;
+        }
+        .required-field::after {
+            content: " *";
+            color: red;
+        }
+        .char-counter {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p>Processando...</p>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="lista.html">
+                <i class="fas fa-tasks me-2"></i>Sistema de Tarefas
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="lista.html">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Mensagens -->
+                <div id="alerts"></div>
+
+                <!-- Formulário -->
+                <div class="form-container">
+                    <!-- Header -->
+                    <div class="form-header">
+                        <h2 class="mb-0">
+                            <i id="headerIcon" class="fas fa-plus-circle me-2"></i>
+                            <span id="headerTitle">Cadastrar Tarefa</span>
+                        </h2>
+                        <p class="mb-0 mt-2 opacity-75" id="headerSubtitle">Preencha os dados abaixo para criar uma nova tarefa</p>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="form-body">
+                        <form id="tarefaForm">
+                            <!-- ID (hidden para edição) -->
+                            <input type="hidden" id="tarefaId">
+                            
+                            <!-- Descrição -->
+                            <div class="form-floating mb-3">
+                                <textarea class="form-control" 
+                                         id="descricao" 
+                                         name="descricao"
+                                         placeholder="Digite a descrição da tarefa..."
+                                         style="height: 120px;"
+                                         maxlength="500"
+                                         required
+                                         onkeyup="updateCharCounter()"></textarea>
+                                <label for="descricao" class="required-field">Descrição da Tarefa</label>
+                                <div class="char-counter mt-1">
+                                    <span id="charCount">0</span>/500 caracteres
+                                </div>
+                            </div>
+
+                            <!-- Datas -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="dataCriacao" 
+                                               name="data_criacao"
+                                               required/>
+                                        <label for="dataCriacao" class="required-field">Data de Criação</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="dataPrevista" 
+                                               name="data_prevista"/>
+                                        <label for="dataPrevista">Data Prevista</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Data de Encerramento (apenas para edição) -->
+                            <div id="dataEncerramentoContainer" class="row mb-3" style="display: none;">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="dataEncerramento" 
+                                               name="data_encerramento"/>
+                                        <label for="dataEncerramento">Data de Encerramento</label>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Preenchida automaticamente quando concluída
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Situação -->
+                            <div class="form-floating mb-4">
+                                <select class="form-select" 
+                                        id="situacao" 
+                                        name="situacao"
+                                        required>
+                                    <option value="">Selecione a situação...</option>
+                                    <option value="Pendente">📋 Pendente</option>
+                                    <option value="Em Andamento">⏳ Em Andamento</option>
+                                    <option value="Concluída">✅ Concluída</option>
+                                    <option value="Cancelada">❌ Cancelada</option>
+                                </select>
+                                <label for="situacao" class="required-field">Situação</label>
+                            </div>
+
+                            <!-- Botões -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-secondary btn-lg me-md-2" onclick="cancelar()">
+                                    <i class="fas fa-times me-2"></i>Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                    <i class="fas fa-save me-2"></i>
+                                    <span id="submitText">Cadastrar</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card de Dicas -->
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Dicas</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li>A <strong>descrição</strong> deve ser clara e objetiva</li>
+                            <li>A <strong>data de criação</strong> é preenchida automaticamente com a data atual</li>
+                            <li>A <strong>data prevista</strong> é opcional, mas ajuda no planejamento</li>
+                            <li>A <strong>data de encerramento</strong> é preenchida automaticamente ao marcar como "Concluída"</li>
+                            <li>Use <strong>situações</strong> apropriadas para acompanhar o progresso</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 Sistema de Tarefas - Desenvolvido com Spring Boot</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- Sistema de Autenticação -->
+    <script src="auth.js"></script>
+    <script>
+        // ✅ CORREÇÃO - URL dinâmica que funciona em qualquer porta
+        const API_BASE = `${window.location.protocol}//${window.location.host}/api`;
+        let isEditMode = false;
+        let tarefaId = null;
+
+        // Carregar página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar se é edição pela URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            
+            if (id) {
+                isEditMode = true;
+                tarefaId = id;
+                carregarTarefa(id);
+            } else {
+                // Modo cadastro - preencher data atual
+                const hoje = new Date().toISOString().split('T')[0];
+                document.getElementById('dataCriacao').value = hoje;
+                updateCharCounter();
+            }
+            
+            // Event listener para o formulário
+            document.getElementById('tarefaForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                salvarTarefa();
+            });
+            
+            // Event listener para situação (para validar data de encerramento)
+            document.getElementById('situacao').addEventListener('change', function() {
+                const situacao = this.value;
+                const dataEncerramento = document.getElementById('dataEncerramento');
+                
+                if (situacao === 'Concluída' && !dataEncerramento.value) {
+                    const hoje = new Date().toISOString().split('T')[0];
+                    dataEncerramento.value = hoje;
+                } else if (situacao !== 'Concluída') {
+                    dataEncerramento.value = '';
+                }
+            });
+        });
+
+        // Função para mostrar alertas
+        function mostrarAlerta(tipo, mensagem) {
+            const alertsContainer = document.getElementById('alerts');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                ${mensagem}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertsContainer.appendChild(alertDiv);
+            
+            // Auto-hide após 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Função para mostrar/esconder loading
+        function mostrarLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // Função para atualizar contador de caracteres
+        function updateCharCounter() {
+            const textarea = document.getElementById('descricao');
+            const counter = document.getElementById('charCount');
+            if (textarea && counter) {
+                const currentLength = textarea.value.length;
+                counter.textContent = currentLength;
+                
+                // Mudar cor baseado no limite
+                if (currentLength > 450) {
+                    counter.style.color = '#dc3545'; // Vermelho
+                } else if (currentLength > 400) {
+                    counter.style.color = '#fd7e14'; // Laranja
+                } else {
+                    counter.style.color = '#6c757d'; // Cinza padrão
+                }
+            }
+        }
+
+        // Função para carregar tarefa (modo edição)
+        async function carregarTarefa(id) {
+            mostrarLoading(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/tarefas/${id}`);
+                if (!response.ok) {
+                    throw new Error('Tarefa não encontrada');
+                }
+                
+                const tarefa = await response.json();
+                
+                // Preencher formulário
+                document.getElementById('tarefaId').value = tarefa.id;
+                document.getElementById('descricao').value = tarefa.descricao || '';
+                document.getElementById('dataCriacao').value = tarefa.data_criacao || '';
+                document.getElementById('dataPrevista').value = tarefa.data_prevista || '';
+                document.getElementById('dataEncerramento').value = tarefa.data_encerramento || '';
+                document.getElementById('situacao').value = tarefa.situacao || '';
+                
+                // Atualizar UI para modo edição
+                document.getElementById('headerIcon').className = 'fas fa-edit me-2';
+                document.getElementById('headerTitle').textContent = 'Editar Tarefa';
+                document.getElementById('headerSubtitle').textContent = 'Modifique os dados da tarefa abaixo';
+                document.getElementById('submitText').textContent = 'Atualizar';
+                document.getElementById('dataEncerramentoContainer').style.display = 'block';
+                
+                // Atualizar contador
+                updateCharCounter();
+                
+                mostrarLoading(false);
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarAlerta('danger', 'Erro ao carregar tarefa: ' + error.message);
+                mostrarLoading(false);
+                
+                // Redirecionar para lista após erro
+                setTimeout(() => {
+                    window.location.href = 'lista.html';
+                }, 3000);
+            }
+        }
+
+        // Função para salvar tarefa
+        async function salvarTarefa() {
+            // Validações
+            const descricao = document.getElementById('descricao').value.trim();
+            const situacao = document.getElementById('situacao').value;
+            const dataCriacao = document.getElementById('dataCriacao').value;
+            
+            if (!descricao) {
+                mostrarAlerta('warning', 'Por favor, preencha a descrição da tarefa.');
+                document.getElementById('descricao').focus();
+                return;
+            }
+            
+            if (!situacao) {
+                mostrarAlerta('warning', 'Por favor, selecione a situação da tarefa.');
+                document.getElementById('situacao').focus();
+                return;
+            }
+            
+            if (!dataCriacao) {
+                mostrarAlerta('warning', 'Por favor, preencha a data de criação.');
+                document.getElementById('dataCriacao').focus();
+                return;
+            }
+            
+            // Confirmação para situações importantes
+            if ((situacao === 'Concluída' || situacao === 'Cancelada') && !isEditMode) {
+                if (!confirm(`Tem certeza que deseja marcar esta tarefa como "${situacao}"?`)) {
+                    return;
+                }
+            }
+            
+            mostrarLoading(true);
+            
+            try {
+                // Preparar dados
+                const dadosTarefa = {
+                    descricao: descricao,
+                    data_criacao: dataCriacao,
+                    data_prevista: document.getElementById('dataPrevista').value || null,
+                    data_encerramento: document.getElementById('dataEncerramento').value || null,
+                    situacao: situacao
+                };
+                
+                let url = `${API_BASE}/tarefas`;
+                let method = 'POST';
+                
+                if (isEditMode) {
+                    dadosTarefa.id = parseInt(tarefaId);
+                    url = `${API_BASE}/tarefas/${tarefaId}`;
+                    method = 'PUT';
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(dadosTarefa)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Erro ao salvar tarefa');
+                }
+                
+                const result = await response.json();
+                
+                mostrarLoading(false);
+                
+                // Sucesso - redirecionar para lista com mensagem
+                const mensagem = isEditMode ? 'Tarefa atualizada com sucesso!' : 'Tarefa cadastrada com sucesso!';
+                window.location.href = `lista.html?sucesso=${encodeURIComponent(mensagem)}`;
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarAlerta('danger', 'Erro ao salvar tarefa: ' + error.message);
+                mostrarLoading(false);
+            }
+        }
+
+        // Função para cancelar
+        function cancelar() {
+            if (confirm('Tem certeza que deseja cancelar? As alterações não salvas serão perdidas.')) {
+                window.location.href = 'lista.html';
+            }
+        }
+
+        // Validação em tempo real
+        document.addEventListener('DOMContentLoaded', function() {
+            // Validação da data prevista
+            const dataCriacao = document.getElementById('dataCriacao');
+            const dataPrevista = document.getElementById('dataPrevista');
+            
+            function validarDatas() {
+                if (dataCriacao.value && dataPrevista.value) {
+                    if (dataPrevista.value < dataCriacao.value) {
+                        dataPrevista.setCustomValidity('A data prevista não pode ser anterior à data de criação');
+                    } else {
+                        dataPrevista.setCustomValidity('');
+                    }
+                }
+            }
+            
+            dataCriacao.addEventListener('change', validarDatas);
+            dataPrevista.addEventListener('change', validarDatas);
+            
+            // Validação da descrição
+            const descricaoField = document.getElementById('descricao');
+            descricaoField.addEventListener('input', function() {
+                const valor = this.value.trim();
+                if (valor.length < 5) {
+                    this.setCustomValidity('A descrição deve ter pelo menos 5 caracteres');
+                } else if (valor.length > 500) {
+                    this.setCustomValidity('A descrição não pode ter mais de 500 caracteres');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        });
+
+        // Atalhos do teclado
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + S para salvar
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('tarefaForm').dispatchEvent(new Event('submit'));
+            }
+            
+            // Escape para cancelar
+            if (e.key === 'Escape') {
+                cancelar();
+            }
+        });
+
+        // Salvar rascunho no localStorage (opcional)
+        function salvarRascunho() {
+            if (!isEditMode) {
+                const rascunho = {
+                    descricao: document.getElementById('descricao').value,
+                    data_prevista: document.getElementById('dataPrevista').value,
+                    situacao: document.getElementById('situacao').value
+                };
+                localStorage.setItem('rascunho_tarefa', JSON.stringify(rascunho));
+            }
+        }
+
+        function carregarRascunho() {
+            if (!isEditMode) {
+                const rascunho = localStorage.getItem('rascunho_tarefa');
+                if (rascunho) {
+                    try {
+                        const dados = JSON.parse(rascunho);
+                        if (confirm('Encontramos um rascunho salvo. Deseja carregá-lo?')) {
+                            document.getElementById('descricao').value = dados.descricao || '';
+                            document.getElementById('dataPrevista').value = dados.data_prevista || '';
+                            document.getElementById('situacao').value = dados.situacao || '';
+                            updateCharCounter();
+                        }
+                        localStorage.removeItem('rascunho_tarefa');
+                    } catch (e) {
+                        console.error('Erro ao carregar rascunho:', e);
+                    }
+                }
+            }
+        }
+
+        // Carregar rascunho quando a página carregar
+        window.addEventListener('load', carregarRascunho);
+
+        // Salvar rascunho periodicamente
+        setInterval(salvarRascunho, 30000); // A cada 30 segundos
+    </script>
+</body>
+</html>
