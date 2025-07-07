@@ -45,8 +45,20 @@ update_from_github() {
         exit 1
     fi
     
-    # Fazer stash das alterações locais
-    git stash push -m "Auto-stash antes de update DEV $(date)"
+    # Verificar se há alterações locais importantes
+    if git diff --quiet HEAD -- src/main/java/com/example/tarefa/ConexaoBD.java; then
+        echo -e "${GREEN}✅ ConexaoBD sem alterações locais${NC}"
+        # Fazer stash normal se houver outras alterações
+        if ! git diff --quiet; then
+            git stash push -m "Auto-stash antes de update DEV $(date)"
+        fi
+    else
+        echo -e "${YELLOW}⚠️ ConexaoBD tem alterações locais importantes!${NC}"
+        echo -e "${BLUE}💾 Fazendo commit automático das correções...${NC}"
+        git add src/main/java/com/example/tarefa/ConexaoBD.java
+        git commit -m "AUTO: Preservar correções ConexaoBD antes de update"
+        git push origin master
+    fi
     
     # Fazer pull do master
     git fetch origin
