@@ -7,6 +7,7 @@ public class ConexaoBD {
     private static ConexaoBD instancia = null;
     private Connection conexao = null;
     
+    
     private static final String DB_DRIVER = "org.postgresql.Driver";
     
     // Configurações usando variáveis de ambiente (para Docker) com fallback para desenvolvimento local
@@ -25,6 +26,7 @@ public class ConexaoBD {
     public ConexaoBD() {
         try {
             // Log das configurações (sem mostrar senha)
+            System.out.println("Adicionando um print pra ver se muda");
             System.out.println("🔗 Conectando ao banco de dados:");
             System.out.println("   URL: " + DB_URL);
             System.out.println("   Usuário: " + DB_USER);
