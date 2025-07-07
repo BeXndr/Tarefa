@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # =================================
+  # AMBIENTE DE DESENVOLVIMENTO
+  # =================================
+  app-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: tarefa-app-dev
+    ports:
+      - "8085:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DATABASE_URL=jdbc:postgresql://postgres-dev:5432/tarefa_dev
+      - DATABASE_USERNAME=dev_user
+      - DATABASE_PASSWORD=dev_pass
+      - MAIL_SMTP_USERNAME=${MAIL_USERNAME:-be.schneidr@gmail.com}
+      - MAIL_SMTP_PASSWORD=${MAIL_PASSWORD:-zygt qtcl echc qafw}
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    networks:
+      - dev-network
+    volumes:
+      - ./logs/dev:/app/logs
+    restart: unless-stopped
+
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: postgres-dev
+    environment:
+      - POSTGRES_DB=tarefa_dev
+      - POSTGRES_USER=dev_user
+      - POSTGRES_PASSWORD=dev_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev_user -d tarefa_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =================================
+  # AMBIENTE DE TESTE
+  # =================================
+  app-test:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: tarefa-app-test
+    ports:
+      - "8086:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - DATABASE_URL=jdbc:postgresql://postgres-test:5432/tarefa_test
+      - DATABASE_USERNAME=test_user
+      - DATABASE_PASSWORD=test_pass
+      - MAIL_SMTP_USERNAME=${MAIL_USERNAME:-be.schneidr@gmail.com}
+      - MAIL_SMTP_PASSWORD=${MAIL_PASSWORD:-zygt qtcl echc qafw}
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./logs/test:/app/logs
+    restart: unless-stopped
+
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: postgres-test
+    environment:
+      - POSTGRES_DB=tarefa_test
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d tarefa_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =================================
+  # AMBIENTE DE PRODUÇÃO
+  # =================================
+  app-prod:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: tarefa-app-prod
+    ports:
+      - "8087:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DATABASE_URL=jdbc:postgresql://postgres-prod:5432/tarefa_prod
+      - DATABASE_USERNAME=prod_user
+      - DATABASE_PASSWORD=prod_pass_secure_123
+      - MAIL_SMTP_USERNAME=${MAIL_USERNAME:-be.schneidr@gmail.com}
+      - MAIL_SMTP_PASSWORD=${MAIL_PASSWORD:-zygt qtcl echc qafw}
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    networks:
+      - prod-network
+    volumes:
+      - ./logs/prod:/app/logs
+    restart: unless-stopped
+
+  postgres-prod:
+    image: postgres:15-alpine
+    container_name: postgres-prod
+    environment:
+      - POSTGRES_DB=tarefa_prod
+      - POSTGRES_USER=prod_user
+      - POSTGRES_PASSWORD=prod_pass_secure_123
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - prod-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prod_user -d tarefa_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  dev-network:
+    driver: bridge
+  test-network:
+    driver: bridge
+  prod-network:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
+  postgres_test_data:
+  postgres_prod_data:

@@ -1,0 +1,16 @@
+# Ignorar arquivos desnecessários no build Docker
+target/
+.git
+.gitignore
+README.md
+.env
+.DS_Store
+Thumbs.db
+*.log
+logs/
+node_modules/
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
