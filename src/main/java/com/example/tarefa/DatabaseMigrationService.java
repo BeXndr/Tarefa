@@ -64,7 +64,19 @@ public class DatabaseMigrationService implements CommandLineRunner {
                 ultimo_login TIMESTAMP
             );
             """));
-
+        /*
+        migracoes.add(new Migração("003", "Criar tabela funcionarios", """
+            CREATE TABLE IF NOT EXISTS funcionarios (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                senha_hash VARCHAR(255) NOT NULL,
+                ativo BOOLEAN DEFAULT true,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ultimo_login TIMESTAMP
+            );
+            """));
+*/
         return migracoes;
     }
 
