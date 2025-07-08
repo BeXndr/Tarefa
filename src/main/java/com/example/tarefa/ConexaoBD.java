@@ -1,7 +1,9 @@
 package com.example.tarefa;
 
 import java.sql.*;
+import org.springframework.stereotype.Component; 
 
+@Component
 public class ConexaoBD {
 
     private static ConexaoBD instancia = null;
