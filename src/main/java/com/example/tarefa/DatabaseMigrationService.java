@@ -64,7 +64,7 @@ public class DatabaseMigrationService implements CommandLineRunner {
                 ultimo_login TIMESTAMP
             );
             """));
-        /*
+        
         migracoes.add(new Migração("003", "Criar tabela funcionarios", """
             CREATE TABLE IF NOT EXISTS funcionarios (
                 id SERIAL PRIMARY KEY,
@@ -76,7 +76,7 @@ public class DatabaseMigrationService implements CommandLineRunner {
                 ultimo_login TIMESTAMP
             );
             """));
-*/
+
         return migracoes;
     }
 
